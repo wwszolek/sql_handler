@@ -457,7 +457,7 @@ class DBHandler():
             print('connection failed')
 
 
-    def list_rows(self, table, logic='and', wildcard=True, join=None, include_null=False, **conditions):
+    def list_rows(self, table, logic='and', wildcard=True, join=None, include_null=False, dictionary=True, **conditions):
         '''returns all the rows from the table meeting all the conditions
         name='=abc' , id='<5'   empty conditions = all rows
         ''' 
@@ -481,7 +481,7 @@ class DBHandler():
                 
         if self._connection.is_connected():
             try:
-                cursor=self._connection.cursor(dictionary=True, buffered=True)
+                cursor=self._connection.cursor(dictionary=dictionary, buffered=True)
 
                 statement='SELECT * FROM `%s` %s WHERE %s;'
                 condition=_prepare_conditions(logic, wildcard, **conditions)
@@ -512,7 +512,12 @@ class DBHandler():
 
             else:
                 self._connection.commit()
-                return [row for row in cursor]
+                ret=[row for row in cursor]
+                if not dictionary:
+                    desc=[field[0] for field in cursor.description]
+                    return desc,ret
+                else:
+                    return ret
 
             finally:
                 cursor.close()
