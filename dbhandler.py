@@ -16,8 +16,8 @@ def prepare_args(args):
         raise TypeError
 
 
-def _prepare_conditions(logic='and', wildcard=True, **conditions):
-    operators=('=','<','>','!')
+def _prepare_conditions(logic='and', wildcard=True, update=False, **conditions):
+    operators=('=','<','>','!','^')
     keywords=('and', 'or')
     template='`%s`%s%s'
     wildcards=('%','_')
@@ -49,6 +49,7 @@ def _prepare_conditions(logic='and', wildcard=True, **conditions):
             raise ValueError('logic flag should be \'or\' or \'and\'')
 
         st=[]
+        updates=[]
         for field,condition in conditions.items():
             format=''
             op=''
@@ -74,21 +75,35 @@ def _prepare_conditions(logic='and', wildcard=True, **conditions):
                         val=values.pop(0) if len(val)==0 else val
                         op,val=null_check(op,val)
                         op,val=wildcard_check(op,val,wildcard)
-                        format+=template%(field,op,val)
+                        if update and op=='^':
+                            updates.append(template%(field,'=',val))
+                        else:
+                            format+=template%(field,op,val)
 
                 elif t is not tokens[0]:
                     val=values.pop(0) if len(val)==0 else val
                     op,val=null_check(op,val)
                     op,val=wildcard_check(op,val,wildcard)
-                    format+=template%(field,op,val)+' '+t.upper()+' '
+                    if update and op=='^':
+                        updates.append(template%(field,'=',val))
+                    else:
+                        format+=template%(field,op,val)+' '+t.upper()+' '
                     op=''
                     val=''
                 
             st.append('('+format+')')
-
-        return (' '+logic.upper()+' ').join(st)
+        if st[-1]=='()':
+            st.pop(-1)
+        ret=(' '+logic.upper()+' ').join(st) if len(st)>0 else '1=1'
+        if update:
+            return updates,ret
+        else:
+            return ret
     else:
-        return '1=1'
+        if update:
+            return None,'1=1'
+        else:
+            return '1=1'
 
 class DBHandler():
     '''mysql database handler'''
@@ -525,7 +540,34 @@ class DBHandler():
         else:
             print('connection failed')
             return None
-
+    
+    def update_rows(self, table,logic='and', wildcard=True, **conditions):
+        if self._connection.is_connected():
+            try:
+                cursor=self._connection.cursor()
+                statement='UPDATE `%s` SET %s WHERE %s;'
+                updates,condition=_prepare_conditions(logic,wildcard,update=True,**conditions)
+                assert updates is not None
+                update_statement=','.join(updates)
+                
+                print(statement%(table,update_statement,condition))
+                cursor.execute(statement%(table,update_statement,condition))
+                
+            except mysql.connector.Error as error:
+                print(error.msg)
+                self._connection.rollback()
+            except AssertionError:
+                print(sys.exc_info()[1])
+                self._connection.rollback()
+            
+            else:
+                self._connection.commit()
+                
+            finally:
+                cursor.close()
+        else:
+            print('connection failed')
+    
     def create_relation(self, table1, table2, field1=None, field2=None, unique=False, delete='NO ACTION', update='NO ACTION'):
         
         if self._connection.is_connected():
