@@ -1,5 +1,6 @@
 import mysql.connector
 import sys
+from datetime import datetime, timezone
 
 def prepare_args(args):
     if isinstance(args,str):
@@ -28,21 +29,22 @@ def _prepare_conditions(logic='and', wildcard=True, update=False, **conditions):
             return (' IS NOT ','NULL')
         else:
             return (op,val)
+            
     def wildcard_check(op,val,wildcard):
         if op=='=' and wildcard==True:
             for w in wildcards:
                 if w in val:
-                    return (' LIKE ','\'%s\''%val)
-            return (op,'\'%s\''%val)
+                    return (' LIKE ',val)
+            return (op,val)
         elif op=='!=' and wildcard==True:
             for w in wildcards:
                 if w in val:
-                    return (' NOT LIKE ','\'%s\''%val)
-            return (op,'\'%s\''%val)
+                    return (' NOT LIKE ',val)
+            return (op,val)
         elif wildcard==False:
-            return (op,'\'%s\''%val)
+            return (op,val)
         else:
-            return (op,'\'%s\''%(val.strip(''.join(wildcards))))
+            return (op,val.strip(''.join(wildcards)))
 
     if len(conditions)>0:
         if logic.lower() not in keywords:
@@ -50,6 +52,7 @@ def _prepare_conditions(logic='and', wildcard=True, update=False, **conditions):
 
         st=[]
         updates=[]
+        print(conditions)
         for field,condition in conditions.items():
             format=''
             op=''
@@ -58,7 +61,11 @@ def _prepare_conditions(logic='and', wildcard=True, update=False, **conditions):
             values=[]
             if isinstance(condition,tuple):
                 tokens=condition[0].split(' ')
-                values=[str(x) for x in condition[1:]]
+                for c in condition[1:]:
+                    if type(c)==type(datetime.now()):
+                        values.append('NOW()')
+                    else:
+                        values.append(str(c))
             else:
                 tokens=condition.split(' ')
                 values=None
@@ -73,8 +80,10 @@ def _prepare_conditions(logic='and', wildcard=True, update=False, **conditions):
 
                     if t is tokens[-1]:
                         val=values.pop(0) if len(val)==0 else val
-                        op,val=null_check(op,val)
                         op,val=wildcard_check(op,val,wildcard)
+                        op,val=null_check(op,val)
+                        val='\'%s\''%val if val not in ('NULL','NOW()') else val
+                        
                         if update and op=='^':
                             updates.append(template%(field,'=',val))
                         else:
@@ -82,8 +91,10 @@ def _prepare_conditions(logic='and', wildcard=True, update=False, **conditions):
 
                 elif t is not tokens[0]:
                     val=values.pop(0) if len(val)==0 else val
-                    op,val=null_check(op,val)
                     op,val=wildcard_check(op,val,wildcard)
+                    op,val=null_check(op,val)
+                    val='\'%s\''%val if val not in ('NULL','NOW()') else val
+
                     if update and op=='^':
                         updates.append(template%(field,'=',val))
                     else:
@@ -109,7 +120,7 @@ class DBHandler():
     '''mysql database handler'''
     field_parameters={
         'field':None,
-        'type':{int:'INT', str:'VARCHAR'},
+        'type':{int:'INT', str:'VARCHAR', datetime:'TIMESTAMP'},
         'default_size':{int:11, str:50},
         'size':None,
         'null':{True:'NULL', False:'NOT NULL'},
@@ -126,7 +137,8 @@ class DBHandler():
         'database':''
         }
     _connection=mysql.connector.MySQLConnection()
-
+    _timezone=timezone(hours=0,minutes=0)
+    
     def __init__(self,**kwconfig):
         self._update_config(**kwconfig)
         self.connect()
@@ -184,7 +196,11 @@ class DBHandler():
         def fix_parameters(field):
             type=field['type'].strip(')').split('(')
             field['type']=list(self.field_parameters['type'].keys())[list(self.field_parameters['type'].values()).index(type[0].upper())]
-            field['size']=int(type[1])
+            
+            field['size']=None
+            if len(type)==2:
+                field['size']=int(type[1])
+            
             field['null'] = True if field['null']=='Yes' else False
                     
             field['primary']=False
@@ -303,17 +319,18 @@ class DBHandler():
         if self._connection.is_connected():
             try:
                 cursor=self._connection.cursor()
-
-                statement='ALTER TABLE `%s` ADD `%s` %s(%d) %s %s %s %s %s'
+                statement='ALTER TABLE `%s` ADD `%s` %s %s %s %s %s %s'
                 data=[]
 
                 data.append(table)
                 data.append(field)
-                data.append(self.field_parameters['type'][type])
-                if size is not None:
-                    data.append(size)
+
+                if issubclass(type,datetime):
+                    data.append(self.field_parameters['type'][type])
                 else:
-                    data.append(self.field_parameters['default_size'][type])
+                    if size is None:
+                        size=self.field_parameters['default_size'][type]
+                    data.append('%s(%d)'%(self.field_parameters['type'][type],size))
 
                 data.append(self.field_parameters['unique'][unique])
                 data.append(self.field_parameters['primary'][primary])
@@ -422,7 +439,10 @@ class DBHandler():
                 for k,v in arg.items():
                     if v is not None:
                         fields.append('`%s`'%k)
-                        values.append('\'%s\''%str(v))
+                        if type(v)==type(datetime.now()):
+                            values.append('NOW()')
+                        else:
+                            values.append('\'%s\''%str(v))
                 
 
                 print(statement%(table,','.join(fields),','.join(values)))
@@ -521,7 +541,7 @@ class DBHandler():
                         for r in relations:
                             join_data.append(join_template%(join,table,r[0],join,r[1]))
 
-                #print(statement%(table,' '.join(join_data),condition))
+                print(statement%(table,' '.join(join_data),condition))
                 cursor.execute(statement%(table,' '.join(join_data),condition))
 
             except mysql.connector.Error as error:
