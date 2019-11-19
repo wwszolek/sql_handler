@@ -175,7 +175,7 @@ class DBHandler():
                 cursor.close()
 
         else:
-            print('connection failed')
+            raise ConnectionError
             return None
 
     def explain_table(self, name, dictionary=True):
@@ -241,7 +241,7 @@ class DBHandler():
             finally:
                 cursor.close()
         else:
-            print('connection failed')
+            raise ConnectionError
             return None
 
     def create_table(self, name, id=True, *args, **kwargs):
@@ -271,7 +271,8 @@ class DBHandler():
             finally:
                 cursor.close()
         else:
-            print('connection failed')
+            raise ConnectionError
+
 
     def del_table(self, table):
         '''drops table from database'''
@@ -292,7 +293,8 @@ class DBHandler():
                 cursor.close()
 
         else:
-            print('connection failed')
+            raise ConnectionError
+
 
     def add_field(self, table, field, type, size=None, unique=False, primary=False, default=None, null=True, auto_increment=False):
         '''add fields to table, based on arguments
@@ -338,7 +340,8 @@ class DBHandler():
             finally:
                 cursor.close()
         else:
-            print('connection failed')
+            raise ConnectionError
+
 
     def _foreign_key_deletion_fix(self, table, field):
         try:
@@ -391,7 +394,7 @@ class DBHandler():
                 cursor.close()
         
         else:
-            print('connection failed')
+            raise ConnectionError
 
     def add_data(self, table, *args, **kwargs):
         '''insert rows into table'''
@@ -440,7 +443,8 @@ class DBHandler():
                 cursor.close()
 
         else:
-            print('connection failed')
+            raise ConnectionError
+
     
     def del_rows(self, table, truncate=False, wildcard=True, logic='and', **conditions):
         '''del rows from the table meeting all the conditions
@@ -469,7 +473,7 @@ class DBHandler():
                 cursor.close()
 
         else:
-            print('connection failed')
+            raise ConnectionError
 
 
     def list_rows(self, table, logic='and', wildcard=True, join=None, include_null=False, dictionary=True, **conditions):
@@ -538,7 +542,7 @@ class DBHandler():
                 cursor.close()
     
         else:
-            print('connection failed')
+            raise ConnectionError
             return None
     
     def update_rows(self, table,logic='and', wildcard=True, **conditions):
@@ -566,7 +570,7 @@ class DBHandler():
             finally:
                 cursor.close()
         else:
-            print('connection failed')
+            raise ConnectionError
     
     def create_relation(self, table1, table2, field1=None, field2=None, unique=False, delete='NO ACTION', update='NO ACTION'):
         
@@ -609,4 +613,4 @@ class DBHandler():
             finally:
                 cursor.close()
         else:
-            print('connection failed')
+            raise ConnectionError
