@@ -175,7 +175,7 @@ class DBHandler():
                 cursor.close()
 
         else:
-            raise ConnectionError
+            raise ConnectionError('handler is disconnected')
             return None
 
     def explain_table(self, name, dictionary=True):
@@ -241,7 +241,7 @@ class DBHandler():
             finally:
                 cursor.close()
         else:
-            raise ConnectionError
+            raise ConnectionError('handler is disconnected')
             return None
 
     def create_table(self, name, id=True, *args, **kwargs):
@@ -271,7 +271,7 @@ class DBHandler():
             finally:
                 cursor.close()
         else:
-            raise ConnectionError
+            raise ConnectionError('handler is disconnected')
 
 
     def del_table(self, table):
@@ -293,7 +293,7 @@ class DBHandler():
                 cursor.close()
 
         else:
-            raise ConnectionError
+            raise ConnectionError('handler is disconnected')
 
 
     def add_field(self, table, field, type, size=None, unique=False, primary=False, default=None, null=True, auto_increment=False):
@@ -340,7 +340,7 @@ class DBHandler():
             finally:
                 cursor.close()
         else:
-            raise ConnectionError
+            raise ConnectionError('handler is disconnected')
 
 
     def _foreign_key_deletion_fix(self, table, field):
@@ -394,7 +394,7 @@ class DBHandler():
                 cursor.close()
         
         else:
-            raise ConnectionError
+            raise ConnectionError('handler is disconnected')
 
     def add_data(self, table, *args, **kwargs):
         '''insert rows into table'''
@@ -443,7 +443,7 @@ class DBHandler():
                 cursor.close()
 
         else:
-            raise ConnectionError
+            raise ConnectionError('handler is disconnected')
 
     
     def del_rows(self, table, truncate=False, wildcard=True, logic='and', **conditions):
@@ -473,7 +473,7 @@ class DBHandler():
                 cursor.close()
 
         else:
-            raise ConnectionError
+            raise ConnectionError('handler is disconnected')
 
 
     def list_rows(self, table, logic='and', wildcard=True, join=None, include_null=False, dictionary=True, **conditions):
@@ -542,7 +542,7 @@ class DBHandler():
                 cursor.close()
     
         else:
-            raise ConnectionError
+            raise ConnectionError('handler is disconnected')
             return None
     
     def update_rows(self, table,logic='and', wildcard=True, **conditions):
@@ -570,7 +570,7 @@ class DBHandler():
             finally:
                 cursor.close()
         else:
-            raise ConnectionError
+            raise ConnectionError('handler is disconnected')
     
     def create_relation(self, table1, table2, field1=None, field2=None, unique=False, delete='NO ACTION', update='NO ACTION'):
         
@@ -613,4 +613,4 @@ class DBHandler():
             finally:
                 cursor.close()
         else:
-            raise ConnectionError
+            raise ConnectionError('handler is disconnected')
