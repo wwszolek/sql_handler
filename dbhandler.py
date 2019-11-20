@@ -1,6 +1,6 @@
 import mysql.connector
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 
 def prepare_args(args):
     if isinstance(args,str):
@@ -137,7 +137,7 @@ class DBHandler():
         'database':''
         }
     _connection=mysql.connector.MySQLConnection()
-    _timezone=timezone(offset=timedelta(hours=0,minutes=0))
+    _timezone=timedelta(hours=0)
     
     def __init__(self,**kwconfig):
         self._update_config(**kwconfig)
