@@ -1,6 +1,6 @@
 import mysql.connector
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 def prepare_args(args):
     if isinstance(args,str):
@@ -137,7 +137,7 @@ class DBHandler():
         'database':''
         }
     _connection=mysql.connector.MySQLConnection()
-    _timezone=timezone(hours=0,minutes=0)
+    _timezone=timezone(offset=timedelta(hours=0,minutes=0))
     
     def __init__(self,**kwconfig):
         self._update_config(**kwconfig)
@@ -496,7 +496,7 @@ class DBHandler():
             raise ConnectionError('handler is disconnected')
 
 
-    def list_rows(self, table, logic='and', wildcard=True, join=None, include_null=False, dictionary=True, **conditions):
+    def list_rows(self, table, logic='and', wildcard=True, join=None, include_null=False, dictionary=True, order_by=None, **conditions):
         '''returns all the rows from the table meeting all the conditions
         name='=abc' , id='<5'   empty conditions = all rows
         ''' 
@@ -522,7 +522,7 @@ class DBHandler():
             try:
                 cursor=self._connection.cursor(dictionary=dictionary, buffered=True)
 
-                statement='SELECT * FROM `%s` %s WHERE %s;'
+                statement='SELECT * FROM `%s` %s WHERE %s %s;'
                 condition=_prepare_conditions(logic, wildcard, **conditions)
 
                 join_data=[]
@@ -540,9 +540,22 @@ class DBHandler():
                         relations=_join_relation_checks(table,join)
                         for r in relations:
                             join_data.append(join_template%(join,table,r[0],join,r[1]))
+                
+                order_stm=''
+                if isinstance(order_by,dict) and len(order_by)>0:
+                    order_stm='ORDER BY %s'
+                    ordering_keynames=('ASC','DESC')
+                    order=[]
+                    template='`%s` %s'
+                            
+                    for k,v in order_by.items():
+                        if v.upper() in ordering_keynames:
+                            order.append(template%(k,v))
 
-                print(statement%(table,' '.join(join_data),condition))
-                cursor.execute(statement%(table,' '.join(join_data),condition))
+                    order_stm=order_stm%','.join(order)
+                    
+                print(statement%(table,' '.join(join_data),condition,order_stm))
+                cursor.execute(statement%(table,' '.join(join_data),condition,order_stm))
 
             except mysql.connector.Error as error:
                 print(error.msg)
