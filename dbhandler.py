@@ -143,7 +143,6 @@ class DBHandler():
         self._update_config(**kwconfig)
         self.connect()
 
-
     def __del__(self):
         self._connection.close()
 
@@ -156,10 +155,12 @@ class DBHandler():
         else:
             raise TypeError('Empty config')
 
+    def isconnected():
+        return self._connection.is_connected()
 
     def connect(self):
         '''connects to mysql database'''
-        if self._connection.is_connected():
+        if self.isconnected():
             self._connection.close()
 
         try:
@@ -173,7 +174,7 @@ class DBHandler():
         
     def list_tables(self):
         '''returns list of names of all tables'''
-        if self._connection.is_connected():
+        if self.isconnected():
             try:
                 cursor=self._connection.cursor()
                 cursor.execute('SHOW TABLES;')
@@ -215,7 +216,7 @@ class DBHandler():
             field['auto_increment']=True if 'auto_increment' in field['extra'] else False
             del field['extra']
 
-        if self._connection.is_connected():
+        if self.isconnected():
             try:
                 cursor=self._connection.cursor()
                 statement='EXPLAIN `%s`;'
@@ -263,7 +264,7 @@ class DBHandler():
     def create_table(self, name, id=True, *args, **kwargs):
         '''create empty new table with name, 
         if id=True then first field id INT PRIMARY_KEY, AUTO_IN'''
-        if self._connection.is_connected():
+        if self.isconnected():
             try:
                 cursor=self._connection.cursor()
                 statement=''
@@ -292,7 +293,7 @@ class DBHandler():
 
     def del_table(self, table):
         '''drops table from database'''
-        if self._connection.is_connected():
+        if self.isconnected():
             try:
                 cursor=self._connection.cursor()
                 statement='DROP TABLE `%s`'%table
@@ -316,7 +317,7 @@ class DBHandler():
         '''add fields to table, based on arguments
         null=False has to be always provided with default value
         '''
-        if self._connection.is_connected():
+        if self.isconnected():
             try:
                 cursor=self._connection.cursor()
                 statement='ALTER TABLE `%s` ADD `%s` %s %s %s %s %s %s'
@@ -385,7 +386,7 @@ class DBHandler():
 
     def del_field(self, table, field):
         '''drops field from table'''
-        if self._connection.is_connected():
+        if self.isconnected():
             try:
                 cursor=self._connection.cursor()
                 statement='ALTER TABLE `%s` DROP `%s`'
@@ -415,7 +416,7 @@ class DBHandler():
 
     def add_data(self, table, *args, **kwargs):
         '''insert rows into table'''
-        if self._connection.is_connected():
+        if self.isconnected():
             try:
                 cursor=self._connection.cursor()
 
@@ -470,7 +471,7 @@ class DBHandler():
         '''del rows from the table meeting all the conditions
         truncate=True and empty conditions resets auto_increment
         '''
-        if self._connection.is_connected():
+        if self.isconnected():
             try:
                 cursor=self._connection.cursor()
 
@@ -518,7 +519,7 @@ class DBHandler():
             finally:
                 cursor.close()
                 
-        if self._connection.is_connected():
+        if self.isconnected():
             try:
                 cursor=self._connection.cursor(dictionary=dictionary, buffered=True)
 
@@ -579,7 +580,7 @@ class DBHandler():
             return None
     
     def update_rows(self, table,logic='and', wildcard=True, **conditions):
-        if self._connection.is_connected():
+        if self.isconnected():
             try:
                 cursor=self._connection.cursor()
                 statement='UPDATE `%s` SET %s WHERE %s;'
@@ -607,7 +608,7 @@ class DBHandler():
     
     def create_relation(self, table1, table2, field1=None, field2=None, unique=False, delete='NO ACTION', update='NO ACTION'):
         
-        if self._connection.is_connected():
+        if self.isconnected():
             try:
                 actions=('CASCADE','SET NULL','RESTRICT','NO ACTION','SET DEFAULT')
                 statement='ALTER TABLE `%s` ADD `%s` %s %s,ADD FOREIGN KEY (`%s`) REFERENCES `%s`(`%s`) ON DELETE %s ON UPDATE %s;'
