@@ -155,7 +155,7 @@ class DBHandler():
         else:
             raise TypeError('Empty config')
 
-    def isconnected():
+    def isconnected(self):
         return self._connection.is_connected()
 
     def connect(self):
