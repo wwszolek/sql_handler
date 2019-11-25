@@ -497,7 +497,7 @@ class DBHandler():
             raise ConnectionError('handler is disconnected')
 
 
-    def list_rows(self, table, logic='and', wildcard=True, join=None, include_null=False, dictionary=True, order_by=None, **conditions):
+    def list_rows(self, table, select=None, logic='and', wildcard=True, join=None, include_null=False, dictionary=True, order_by=None, **conditions):
         '''returns all the rows from the table meeting all the conditions
         name='=abc' , id='<5'   empty conditions = all rows
         ''' 
@@ -523,9 +523,23 @@ class DBHandler():
             try:
                 cursor=self._connection.cursor(dictionary=dictionary, buffered=True)
 
-                statement='SELECT * FROM `%s` %s WHERE %s %s;'
+                statement='SELECT %s FROM `%s` %s WHERE %s %s;'
                 condition=_prepare_conditions(logic, wildcard, **conditions)
-
+                
+                select_data=[]
+                if select is not None:
+                    select_func=('COUNT','SUM','AVG')
+                    for s in select:
+                        if isinstance(s,tuple):
+                            if s[0].upper() in select_func and len(s)==2:
+                                select_data.append('%s(`%s`)'%(s[0],s[1]))
+                            elif s[0].upper() in select_func and len(s)==1:
+                                select_data.append('%s(*)'%s[0])
+                        else:
+                            select_data.append('`%s`'%s)
+                else:
+                    select_data.append('*')
+                
                 join_data=[]
                 if join is not None:
                     join_template='JOIN `%s` ON (`%s`.`%s`=`%s`.`%s`)'
@@ -555,8 +569,8 @@ class DBHandler():
 
                     order_stm=order_stm%','.join(order)
                     
-                print(statement%(table,' '.join(join_data),condition,order_stm))
-                cursor.execute(statement%(table,' '.join(join_data),condition,order_stm))
+                print(statement%(','.join(select_data),table,' '.join(join_data),condition,order_stm))
+                cursor.execute(statement%(','.join(select_data),table,' '.join(join_data),condition,order_stm))
 
             except mysql.connector.Error as error:
                 print(error.msg)
