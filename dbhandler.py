@@ -27,6 +27,8 @@ def _prepare_conditions(logic='and', wildcard=True, update=False, **conditions):
             return (' IS ','NULL')
         elif op=='!=' and val.lower()=='null':
             return (' IS NOT ','NULL')
+        elif val.lower()=='null':
+            return (op,'NULL')
         else:
             return (op,val)
             
@@ -442,6 +444,8 @@ class DBHandler():
                         fields.append('`%s`'%k)
                         if type(v)==type(datetime.now()):
                             values.append('NOW()')
+                        elif v.upper()=='NULL':
+                            values.append('NULL')
                         else:
                             values.append('\'%s\''%str(v))
                 
