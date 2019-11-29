@@ -444,7 +444,7 @@ class DBHandler():
                         fields.append('`%s`'%k)
                         if type(v)==type(datetime.now()):
                             values.append('NOW()')
-                        elif v.upper()=='NULL':
+                        elif isinstance(v,str) and v.upper()=='NULL':
                             values.append('NULL')
                         else:
                             values.append('\'%s\''%str(v))
